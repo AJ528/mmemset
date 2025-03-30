@@ -45,7 +45,7 @@ TEST memset_iterate_len(uint32_t start_address, int32_t fill_val, uint32_t max_d
 
 #define BUFFER_SIZE 0x100
 
-extern void * memset_( void * ptr, int value, size_t num );
+extern void * memset_(void * ptr, int value, size_t num);
 
 // Add definitions that need to be in the test runner's main file.
 GREATEST_MAIN_DEFS();
