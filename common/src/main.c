@@ -40,9 +40,12 @@ static inline uint32_t get_cycle_count(void);
 
 static void run_test(void);
 
+TEST memset_test(uint32_t start_address, int32_t fill_val, uint32_t data_len, bool print_performance);
+TEST memset_iterate_len(uint32_t start_address, int32_t fill_val, uint32_t max_data_len, bool print_performance);
+
 #define BUFFER_SIZE 0x100
 
-extern int strcmp_(const char *str1, const char *str2);
+extern void * memset_( void * ptr, int value, size_t num );
 
 // Add definitions that need to be in the test runner's main file.
 GREATEST_MAIN_DEFS();
@@ -108,13 +111,87 @@ int main(void)
 
 static void run_test(void)
 {
-  printfln_("%-10s %-10s %-6s %-6s %-6s %-6s %-8s %-8s %-8s", "s1", "s2", "s1_off", "s2_off", "o_ret", "n_ret", "o_cycle", "n_cycle", "c_diff");
+  printfln_("%-10s %-6s %-8s %-8s %-8s", "s_addr", "d_len", "o_cycle", "n_cycle", "c_diff");
 
   GREATEST_MAIN_BEGIN();  // command-line options, initialization.
+  
+  RUN_TESTp(memset_iterate_len, 0x0, 0xBB, 66, true);
+  RUN_TESTp(memset_iterate_len, 0x1, 0xCC, 66, true);
+  RUN_TESTp(memset_iterate_len, 0x2, 0xDD, 66, true);
+  RUN_TESTp(memset_iterate_len, 0x3, 0xEE, 66, true);
+  RUN_TESTp(memset_iterate_len, 0x4, 0xFF, 66, true);
+
+  RUN_TESTp(memset_iterate_len, 0x5, 0xBB, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x6, 0xCC, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x7, 0xDD, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x8, 0xEE, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x9, 0xBB, 66, false);
+  RUN_TESTp(memset_iterate_len, 0xa, 0xCC, 66, false);
+  RUN_TESTp(memset_iterate_len, 0xb, 0xDD, 66, false);
+  RUN_TESTp(memset_iterate_len, 0xc, 0xEE, 66, false);
+  RUN_TESTp(memset_iterate_len, 0xd, 0xBB, 66, false);
+  RUN_TESTp(memset_iterate_len, 0xe, 0xCC, 66, false);
+  RUN_TESTp(memset_iterate_len, 0xf, 0xDD, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x10, 0xEE, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x11, 0xBB, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x12, 0xCC, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x13, 0xDD, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x14, 0xEE, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x15, 0xBB, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x16, 0xCC, 66, false);
+  RUN_TESTp(memset_iterate_len, 0x17, 0xDD, 66, false);
 
 
   GREATEST_MAIN_END();    // display results
 }
+
+TEST memset_test(uint32_t start_address, int32_t fill_val, uint32_t data_len, bool print_performance)
+{
+  uint8_t default_fill = 0xAA;
+
+  uint8_t expected[BUFFER_SIZE];
+  uint8_t actual[BUFFER_SIZE];
+
+  memset(expected, default_fill, BUFFER_SIZE);
+  memset(actual, default_fill, BUFFER_SIZE);
+
+  if(data_len > BUFFER_SIZE){
+    FAIL();
+  }
+
+  memset(&(expected[start_address]), fill_val, data_len);
+  uint32_t memcpy_orig_start = get_cycle_count();
+  memset(&(expected[start_address]), fill_val, data_len);
+  uint32_t memcpy_orig_stop = get_cycle_count();
+
+  memset_(&(actual[start_address]), fill_val, data_len);
+  uint32_t memcpy_new_start = get_cycle_count();
+  memset_(&(actual[start_address]), fill_val, data_len);
+  uint32_t memcpy_new_stop = get_cycle_count();
+
+  if(print_performance){
+    uint32_t orig_cycle = memcpy_orig_stop-memcpy_orig_start;
+    uint32_t new_cycle = memcpy_new_stop-memcpy_new_start;
+    int32_t cycle_diff = orig_cycle - new_cycle;
+    printfln_("%-#10x %-6u %-8u %-8u %-8d", start_address, data_len, orig_cycle, new_cycle, cycle_diff);
+  }
+
+  ASSERT_MEM_EQ(expected, actual, BUFFER_SIZE);
+
+  PASS();
+}
+
+TEST memset_iterate_len(uint32_t start_address, int32_t fill_val, uint32_t max_data_len, bool print_performance)
+{
+  uint32_t i;
+
+  for(i = 0; i < max_data_len; i++){
+    CHECK_CALL(memset_test(start_address, fill_val, i, print_performance));
+  }
+
+  PASS();
+}
+
 
 #if defined(CORE_CM4)
 static inline void enable_cycle_count(void)
